@@ -1,4 +1,12 @@
 datasets/horse2zebra/
 datasets/summer2winter_yosemite/
-datasets/cyscapes/
+datasets/cityscapes/
 datasets/maps/
+
+outputs/
+
+checkpoints/
+
+results/
+
+**/__pycache__/
