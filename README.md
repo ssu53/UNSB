@@ -38,6 +38,22 @@ However, occasionally, too much NFEs led to "over-translation", where the target
 </p>
 
 ## Environment
+
+```
+conda create -n unsb_python310 python=3.10
+conda activate unsb_python310
+pip install torch torchvision torchaudio
+conda install -c conda-forge packaging 
+conda install -c visdom 
+conda install -c conda-forge gputil 
+conda install -c conda-forge dominate 
+pip install pytorch_fid
+pip install opencv-python
+python -m pip install cityscapesscripts
+```
+
+vs. from original repo:
+
 ```
 $ conda create -n UNSB python=3.8
 $ conda activate UNSB
@@ -47,6 +63,7 @@ $ conda install -c "conda-forge/label/cf201901" visdom
 $ conda install -c conda-forge gputil 
 $ conda install -c conda-forge dominate 
 ```
+
 
 ## Dataset Download
 Download the dataset with following script e.g.
