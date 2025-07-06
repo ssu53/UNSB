@@ -8,12 +8,18 @@ from util.visualizer import Visualizer
 
 if __name__ == '__main__':
     opt = TrainOptions().parse()   # get training options
+    print(opt)
     dataset = create_dataset(opt)  # create a dataset given opt.dataset_mode and other options
     dataset2 = create_dataset(opt)
     dataset_size = len(dataset)    # get the number of images in the dataset.
-
-    model = create_model(opt)      # create a model given opt.model and other options
     print('The number of training images = %d' % dataset_size)
+
+    if opt.cond_dim == 0: opt.cond_dim = None
+    model = create_model(opt)      # create a model given opt.model and other options
+    print(f"netD params {sum(p.numel() for p in model.netD.parameters() if p.requires_grad):,}")
+    print(f"netE params {sum(p.numel() for p in model.netE.parameters() if p.requires_grad):,}")
+    print(f"netF params {sum(p.numel() for p in model.netF.parameters() if p.requires_grad):,}")
+    print(f"netG params {sum(p.numel() for p in model.netG.parameters() if p.requires_grad):,}")
 
     visualizer = Visualizer(opt)   # create a visualizer that display/save images and plots
     opt.visualizer = visualizer

@@ -103,7 +103,7 @@ class D_NLayersMulti(nn.Module):
 
 
 class ConvBlock_cond(nn.Module):
-    def __init__(self, in_channel, out_channel,t_emb_dim, kernel_size=4,stride=1,padding=1,norm_layer=None,downsample=True,use_bias=None):
+    def __init__(self, in_channel, out_channel,t_emb_dim, kernel_size=4,stride=1,padding=1,norm_layer=None,downsample=True,use_bias=None,cond_dim=None):
         super().__init__()
         self.downsample=downsample
         self.conv1 = nn.Conv2d(in_channel, out_channel, kernel_size=kernel_size, stride=stride, padding=padding, bias=use_bias)
@@ -117,9 +117,14 @@ class ConvBlock_cond(nn.Module):
         self.down = Downsample(out_channel)
         
         self.dense= nn.Linear(t_emb_dim, out_channel)
-    def forward(self, input,t_emb):
+        if cond_dim is not None:
+            self.dense_other = nn.Linear(cond_dim, out_channel)
+    def forward(self, input,t_emb,other_cond):
         out = self.conv1(input)
         out += self.dense(t_emb)[..., None, None]
+        if other_cond is not None:
+            # print("ConvBlock_cond conditioning", other_cond.shape, out.shape, self.dense_other(other_cond)[...,None,None].shape)
+            out += self.dense_other(other_cond)[...,None,None]
         if self.use_norm:
             out = self.norm(out)
         out = self.act(out)
@@ -131,7 +136,7 @@ class ConvBlock_cond(nn.Module):
 class NLayerDiscriminator_ncsn(nn.Module):
     """Defines a PatchGAN discriminator"""
 
-    def __init__(self, input_nc, ndf=64, n_layers=3, norm_layer=nn.BatchNorm2d, no_antialias=False):
+    def __init__(self, input_nc, ndf=64, n_layers=3, norm_layer=nn.BatchNorm2d, no_antialias=False, cond_dim=None):
         """Construct a PatchGAN discriminator
 
         Parameters:
@@ -151,7 +156,7 @@ class NLayerDiscriminator_ncsn(nn.Module):
         if no_antialias:
             sequence = [nn.Conv2d(input_nc, ndf, kernel_size=kw, stride=2, padding=padw), nn.LeakyReLU(0.2, True)]
         else:
-            self.model_main.append(ConvBlock_cond(input_nc, ndf, 4*ndf,kernel_size=kw, stride=1, padding=padw,use_bias=use_bias))
+            self.model_main.append(ConvBlock_cond(input_nc, ndf, 4*ndf,kernel_size=kw, stride=1, padding=padw,use_bias=use_bias,cond_dim=cond_dim))
         
         nf_mult = 1
         nf_mult_prev = 1
@@ -166,14 +171,14 @@ class NLayerDiscriminator_ncsn(nn.Module):
                     nn.LeakyReLU(0.2, True)]
             else:
                 self.model_main.append(
-                    ConvBlock_cond(ndf * nf_mult_prev, ndf * nf_mult, 4*ndf,kernel_size=kw, stride=1, padding=padw,use_bias=use_bias,norm_layer=norm_layer)
+                    ConvBlock_cond(ndf * nf_mult_prev, ndf * nf_mult, 4*ndf,kernel_size=kw, stride=1, padding=padw,use_bias=use_bias,norm_layer=norm_layer,cond_dim=cond_dim)
                     
                 )
 
         nf_mult_prev = nf_mult
         nf_mult = min(2 ** n_layers, 8)
         self.model_main.append(
-            ConvBlock_cond(ndf * nf_mult_prev, ndf * nf_mult,4*ndf, kernel_size=kw, stride=1, padding=padw,use_bias=use_bias,norm_layer=norm_layer,downsample=False)
+            ConvBlock_cond(ndf * nf_mult_prev, ndf * nf_mult,4*ndf, kernel_size=kw, stride=1, padding=padw,use_bias=use_bias,norm_layer=norm_layer,downsample=False,cond_dim=cond_dim)
             
         )
         self.final_conv =nn.Conv2d(ndf * nf_mult, 1, kernel_size=kw, stride=1, padding=padw)
@@ -184,7 +189,7 @@ class NLayerDiscriminator_ncsn(nn.Module):
             act=nn.LeakyReLU(0.2),
         )
 
-    def forward(self, input,t_emb,input2=None):
+    def forward(self, input,t_emb,input2=None,other_cond=None):
         """Standard forward."""
         t_emb = self.t_embed(t_emb)
         if input2 is not None:
@@ -193,7 +198,7 @@ class NLayerDiscriminator_ncsn(nn.Module):
             
             out = input
         for layer in self.model_main:
-            out = layer(out,t_emb)
+            out = layer(out,t_emb,other_cond=other_cond)
             
         return self.final_conv(out)
     
@@ -335,7 +340,7 @@ class ResnetGenerator_ncsn(nn.Module):
         mult = 2 ** n_downsampling
         for i in range(n_blocks):       # add ResNet blocks
 
-            self.model_res += [ResnetBlock_cond(ngf * mult, padding_type=padding_type, norm_layer=norm_layer, use_dropout=use_dropout, use_bias=use_bias,temb_dim=4*ngf,z_dim=4*ngf)]
+            self.model_res += [ResnetBlock_cond(ngf * mult, padding_type=padding_type, norm_layer=norm_layer, use_dropout=use_dropout, use_bias=use_bias,temb_dim=4*ngf,z_dim=4*ngf,cond_dim=opt.cond_dim)]
 
         model_upsample = []
         for i in range(n_downsampling):  # add upsampling layers
@@ -375,7 +380,7 @@ class ResnetGenerator_ncsn(nn.Module):
         modules_emb += [nn.LeakyReLU(0.2)]
         self.time_embed = nn.Sequential(*modules_emb)
         
-    def forward(self, x, time_cond,z,layers=[], encode_only=False):
+    def forward(self, x, time_cond,z,layers=[], encode_only=False, other_cond=None):
         z_embed = self.z_transform(z)
         # print(z_embed.shape)
         temb = get_timestep_embedding(time_cond, self.ngf)
@@ -389,7 +394,7 @@ class ResnetGenerator_ncsn(nn.Module):
                     feats.append(feat)
                 
             for layer_id, layer in enumerate(self.model_res):
-                feat = layer(feat,time_embed,z_embed)
+                feat = layer(feat,time_embed,z_embed,other_cond=other_cond)
                 if layer_id+len(self.model) in layers:
                     feats.append(feat)
                 if layer_id+len(self.model) == layers[-1] and encode_only:
@@ -467,7 +472,7 @@ class ResnetBlock(nn.Module):
 class ResnetBlock_cond(nn.Module):
     """Define a Resnet block"""
 
-    def __init__(self, dim, padding_type, norm_layer, use_dropout, use_bias,temb_dim,z_dim):
+    def __init__(self, dim, padding_type, norm_layer, use_dropout, use_bias,temb_dim,z_dim,cond_dim=None):
         """Initialize the Resnet block
 
         A resnet block is a conv block with skip connections
@@ -476,9 +481,9 @@ class ResnetBlock_cond(nn.Module):
         Original Resnet paper: https://arxiv.org/pdf/1512.03385.pdf
         """
         super(ResnetBlock_cond, self).__init__()
-        self.conv_block,self.adaptive,self.conv_fin = self.build_conv_block(dim, padding_type, norm_layer, use_dropout, use_bias,temb_dim,z_dim)
+        self.conv_block,self.adaptive,self.conv_fin = self.build_conv_block(dim, padding_type, norm_layer, use_dropout, use_bias,temb_dim,z_dim,cond_dim=cond_dim)
 
-    def build_conv_block(self, dim, padding_type, norm_layer, use_dropout, use_bias,temb_dim,z_dim):
+    def build_conv_block(self, dim, padding_type, norm_layer, use_dropout, use_bias,temb_dim,z_dim,cond_dim=None):
         """Construct a convolutional block.
 
         Parameters:
@@ -521,6 +526,8 @@ class ResnetBlock_cond(nn.Module):
         self.conv_fin += [nn.Conv2d(dim, dim, kernel_size=3, padding=p, bias=use_bias), norm_layer(dim)]
         
         self.Dense_time = nn.Linear(temb_dim, dim)
+        if cond_dim is not None:
+            self.Dense_cond = nn.Linear(cond_dim, dim)
         # self.Dense_time.weight.data = default_init()(self.Dense_time.weight.data.shape)
         nn.init.zeros_(self.Dense_time.bias)
         
@@ -531,13 +538,19 @@ class ResnetBlock_cond(nn.Module):
         
         return self.conv_block,self.adaptive,self.conv_fin
 
-    def forward(self, x,time_cond,z):
+    def forward(self, x,time_cond,z, other_cond=None):
         
         time_input = self.Dense_time(time_cond)
+        if other_cond is not None:
+            cond_input = self.Dense_cond(other_cond)[:, :, None, None]
+            # print("ResnetBlock_cond adding", other_cond.shape, cond_input.shape, time_input.shape)
+        else:
+            cond_input = 0.
         for n,layer in enumerate(self.conv_block):
             out = layer(x)
             if n==0:
                 out += time_input[:, :, None, None]
+                out += cond_input
         out = self.adaptive(out,z)
         for layer in self.conv_fin:
             out = layer(out)

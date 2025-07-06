@@ -1,0 +1,9 @@
+python train.py \
+    --dataroot ./datasets/seasonet \
+    --name dummy_SB \
+    --mode sb \
+    --lambda_SB 1.0 \
+    --lambda_NCE 1.0 \
+    --direction B2A \
+    --gpu_ids 0 \
+    --cond_dim 1024 \

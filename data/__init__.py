@@ -69,7 +69,13 @@ class CustomDatasetDataLoader():
         Step 2: create a multi-threaded data loader.
         """
         self.opt = opt
-        dataset_class = find_dataset_using_name(opt.dataset_mode)
+        if 'seasonet' in opt.dataroot:
+            # dataset_class = find_dataset_using_name('unaligned_bbbc')
+            dataset_class = find_dataset_using_name('unaligned_seasonet')
+        elif 'bbbc' in opt.dataroot:
+            dataset_class = find_dataset_using_name('unaligned_bbbc')
+        else:
+            dataset_class = find_dataset_using_name(opt.dataset_mode)
         self.dataset = dataset_class(opt)
         print("dataset [%s] was created" % type(self.dataset).__name__)
         self.dataloader = torch.utils.data.DataLoader(

@@ -160,6 +160,8 @@ class SBModel(BaseModel):
             self.real_A2 = input2['A' if AtoB else 'B'].to(self.device)
             self.real_B2 = input2['B' if AtoB else 'A'].to(self.device)
         
+        self.other_cond = input['condition'].to(self.device) if 'condition' in input else None
+
         self.image_paths = input['A_paths' if AtoB else 'B_paths']
 
     def forward(self):
@@ -191,13 +193,13 @@ class SBModel(BaseModel):
                 time_idx = (t * torch.ones(size=[self.real_A.shape[0]]).to(self.real_A.device)).long()
                 time     = times[time_idx]
                 z        = torch.randn(size=[self.real_A.shape[0],4*self.opt.ngf]).to(self.real_A.device)
-                Xt_1     = self.netG(Xt, time_idx, z)
+                Xt_1     = self.netG(Xt, time_idx, z, other_cond=self.other_cond)
                 
                 Xt2       = self.real_A2 if (t == 0) else (1-inter) * Xt2 + inter * Xt_12.detach() + (scale * tau).sqrt() * torch.randn_like(Xt2).to(self.real_A.device)
                 time_idx = (t * torch.ones(size=[self.real_A.shape[0]]).to(self.real_A.device)).long()
                 time     = times[time_idx]
                 z        = torch.randn(size=[self.real_A.shape[0],4*self.opt.ngf]).to(self.real_A.device)
-                Xt_12    = self.netG(Xt2, time_idx, z)
+                Xt_12    = self.netG(Xt2, time_idx, z, other_cond=self.other_cond)
                 
                 
                 if self.opt.nce_idt:
@@ -205,7 +207,7 @@ class SBModel(BaseModel):
                     time_idx = (t * torch.ones(size=[self.real_A.shape[0]]).to(self.real_A.device)).long()
                     time     = times[time_idx]
                     z        = torch.randn(size=[self.real_A.shape[0],4*self.opt.ngf]).to(self.real_A.device)
-                    Xt_1B = self.netG(XtB, time_idx, z)
+                    Xt_1B = self.netG(XtB, time_idx, z, other_cond=self.other_cond)
             if self.opt.nce_idt:
                 self.XtB = XtB.detach()
             self.real_A_noisy = Xt.detach()
@@ -225,8 +227,8 @@ class SBModel(BaseModel):
                 self.real = torch.flip(self.real, [3])
                 self.realt = torch.flip(self.realt, [3])
         
-        self.fake = self.netG(self.realt,self.time_idx,z_in)
-        self.fake_B2 =  self.netG(self.real_A_noisy2,self.time_idx,z_in2)
+        self.fake = self.netG(self.realt,self.time_idx,z_in,other_cond=self.other_cond)
+        self.fake_B2 =  self.netG(self.real_A_noisy2,self.time_idx,z_in2,other_cond=self.other_cond)
         self.fake_B = self.fake[:self.real_A.size(0)]
         if self.opt.nce_idt:
             self.idt_B = self.fake[self.real_A.size(0):]
@@ -259,7 +261,7 @@ class SBModel(BaseModel):
                     time_idx = (t * torch.ones(size=[self.real_A.shape[0]]).to(self.real_A.device)).long()
                     time     = times[time_idx]
                     z        = torch.randn(size=[self.real_A.shape[0],4*self.opt.ngf]).to(self.real_A.device)
-                    Xt_1     = self.netG(Xt, time_idx, z)
+                    Xt_1     = self.netG(Xt, time_idx, z, other_cond=self.other_cond)
                     
                     setattr(self, "fake_"+str(t+1), Xt_1)
                     
@@ -270,9 +272,9 @@ class SBModel(BaseModel):
         fake = self.fake_B.detach()
         std = torch.rand(size=[1]).item() * self.opt.std
         
-        pred_fake = self.netD(fake,self.time_idx)
+        pred_fake = self.netD(fake,self.time_idx,other_cond=self.other_cond)
         self.loss_D_fake = self.criterionGAN(pred_fake, False).mean()
-        self.pred_real = self.netD(self.real_B,self.time_idx)
+        self.pred_real = self.netD(self.real_B,self.time_idx,other_cond=self.other_cond)
         loss_D_real = self.criterionGAN(self.pred_real, True)
         self.loss_D_real = loss_D_real.mean()
         
@@ -286,8 +288,8 @@ class SBModel(BaseModel):
         
         XtXt_1 = torch.cat([self.real_A_noisy,self.fake_B.detach()], dim=1)
         XtXt_2 = torch.cat([self.real_A_noisy2,self.fake_B2.detach()], dim=1)
-        temp = torch.logsumexp(self.netE(XtXt_1, self.time_idx, XtXt_2).reshape(-1), dim=0).mean()
-        self.loss_E = -self.netE(XtXt_1, self.time_idx, XtXt_1).mean() +temp + temp**2
+        temp = torch.logsumexp(self.netE(XtXt_1, self.time_idx, XtXt_2, other_cond=self.other_cond).reshape(-1), dim=0).mean()
+        self.loss_E = -self.netE(XtXt_1, self.time_idx, XtXt_1, other_cond=self.other_cond).mean() +temp + temp**2
         
         return self.loss_E
     def compute_G_loss(self):
@@ -299,7 +301,7 @@ class SBModel(BaseModel):
         std = torch.rand(size=[1]).item() * self.opt.std
         
         if self.opt.lambda_GAN > 0.0:
-            pred_fake = self.netD(fake,self.time_idx)
+            pred_fake = self.netD(fake,self.time_idx,other_cond=self.other_cond)
             self.loss_G_GAN = self.criterionGAN(pred_fake, True).mean() * self.opt.lambda_GAN
         else:
             self.loss_G_GAN = 0.0
@@ -310,7 +312,7 @@ class SBModel(BaseModel):
             
             bs = self.opt.batch_size
 
-            ET_XY    = self.netE(XtXt_1, self.time_idx, XtXt_1).mean() - torch.logsumexp(self.netE(XtXt_1, self.time_idx, XtXt_2).reshape(-1), dim=0)
+            ET_XY    = self.netE(XtXt_1, self.time_idx, XtXt_1, other_cond=self.other_cond).mean() - torch.logsumexp(self.netE(XtXt_1, self.time_idx, XtXt_2, other_cond=self.other_cond).reshape(-1), dim=0)
             self.loss_SB = -(self.opt.num_timesteps-self.time_idx[0])/self.opt.num_timesteps*self.opt.tau*ET_XY
             self.loss_SB += self.opt.tau*torch.mean((self.real_A_noisy-self.fake_B)**2)
         if self.opt.lambda_NCE > 0.0:
@@ -331,12 +333,11 @@ class SBModel(BaseModel):
     def calculate_NCE_loss(self, src, tgt):
         n_layers = len(self.nce_layers)
         z    = torch.randn(size=[self.real_A.size(0),4*self.opt.ngf]).to(self.real_A.device)
-        feat_q = self.netG(tgt, self.time_idx*0, z, self.nce_layers, encode_only=True)
+        feat_q = self.netG(tgt, self.time_idx*0, z, self.nce_layers, encode_only=True, other_cond=self.other_cond)
 
         if self.opt.flip_equivariance and self.flipped_for_equivariance:
             feat_q = [torch.flip(fq, [3]) for fq in feat_q]
-        
-        feat_k = self.netG(src, self.time_idx*0,z,self.nce_layers, encode_only=True)
+        feat_k = self.netG(src, self.time_idx*0,z,self.nce_layers, encode_only=True, other_cond=self.other_cond)
         feat_k_pool, sample_ids = self.netF(feat_k, self.opt.num_patches, None)
         feat_q_pool, _ = self.netF(feat_q, self.opt.num_patches, sample_ids)
 

@@ -333,7 +333,7 @@ def define_D(input_nc, ndf, netD, n_layers_D=3, norm='batch', init_type='normal'
     elif netD == 'ncsnpp':  # more options
         net = Discriminator_patch(input_nc, ndf, t_emb_dim)
     elif netD == 'basic_cond':  # more options
-        net = NLayerDiscriminator_ncsn(input_nc, ndf, n_layers=3, norm_layer=norm_layer, no_antialias=no_antialias)
+        net = NLayerDiscriminator_ncsn(input_nc, ndf, n_layers=3, norm_layer=norm_layer, no_antialias=no_antialias, cond_dim=opt.cond_dim)
     else:
         raise NotImplementedError('Discriminator model name [%s] is not recognized' % netD)
     return init_net(net, init_type, init_gain, gpu_ids,

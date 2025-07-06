@@ -39,6 +39,7 @@ class BaseOptions():
         parser.add_argument('--netD', type=str, default='basic_cond', choices=['basic', 'n_layers', 'pixel', 'patch', 'tilestylegan2', 'stylegan2'], help='specify discriminator architecture. The basic model is a 70x70 PatchGAN. n_layers allows you to specify the layers in the discriminator')
         parser.add_argument('--netE', type=str, default='basic_cond', choices=['basic', 'n_layers', 'pixel', 'patch', 'tilestylegan2', 'stylegan2', 'patchstylegan2'], help='specify discriminator architecture. The basic model is a 70x70 PatchGAN. n_layers allows you to specify the layers in the discriminator')
         parser.add_argument('--netG', type=str, default='resnet_9blocks_cond', choices=['resnet_9blocks', 'resnet_6blocks', 'unet_256', 'unet_128', 'stylegan2', 'smallstylegan2', 'resnet_cat'], help='specify generator architecture')
+        parser.add_argument('--cond_dim', type=int, default=0, help='dimension of the condition. set to 0 for unconditional. if conditional, must use basic_cond and resnet9blocks_cond.')
         parser.add_argument('--embedding_type', type=str, default='positional', choices=['fourier', 'positional'], help='specify generator architecture')
         parser.add_argument('--n_layers_D', type=int, default=3, help='only used if netD==n_layers')
         parser.add_argument('--style_dim', type=int, default=512, help='only used if netD==n_layers')
