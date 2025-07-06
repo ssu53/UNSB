@@ -1,9 +1,9 @@
 set -ex
-python train.py  \
---dataroot ./dataset/summer2winter_yosemite \
+python -u train.py  \
+--dataroot /pasteur2/u/shiye/UNSB/datasets/summer2winter_yosemite \
 --name sum2win_vgg \
 --model sc \
---gpu_ids 1 \
+--gpu_ids 0 \
 --lambda_spatial 10 \
 --lambda_gradient 0 \
 --attn_layers 4,7,9 \

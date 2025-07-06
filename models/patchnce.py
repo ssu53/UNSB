@@ -1,6 +1,7 @@
 from packaging import version
 import torch
 from torch import nn
+# import einops
 
 
 class PatchNCELoss(nn.Module):
@@ -11,14 +12,16 @@ class PatchNCELoss(nn.Module):
         self.mask_dtype = torch.uint8 if version.parse(torch.__version__) < version.parse('1.2.0') else torch.bool
 
     def forward(self, feat_q, feat_k):
-        num_patches = feat_q.shape[0]
-        dim = feat_q.shape[1]
+        num_patches = feat_q.shape[0] # 256
+        dim = feat_q.shape[1] # 256
         feat_k = feat_k.detach()
 
         # pos logit
         l_pos = torch.bmm(
             feat_q.view(num_patches, 1, -1), feat_k.view(num_patches, -1, 1))
-        l_pos = l_pos.view(num_patches, 1)
+        l_pos = l_pos.view(num_patches, 1) # (256, 1)
+        # l_pos_alt = torch.einsum("h w, h w -> h", feat_q, feat_k)
+        # l_pos_alt = einops.rearrange(l_pos_alt, "h -> h 1")
 
         # neg logit
 
@@ -36,10 +39,10 @@ class PatchNCELoss(nn.Module):
             batch_dim_for_bmm = self.opt.batch_size
 
         # reshape features to batch size
-        feat_q = feat_q.view(batch_dim_for_bmm, -1, dim)
-        feat_k = feat_k.view(batch_dim_for_bmm, -1, dim)
-        npatches = feat_q.size(1)
-        l_neg_curbatch = torch.bmm(feat_q, feat_k.transpose(2, 1))
+        feat_q = feat_q.view(batch_dim_for_bmm, -1, dim) # (1, 256, 256)
+        feat_k = feat_k.view(batch_dim_for_bmm, -1, dim) # (1, 256, 256)
+        npatches = feat_q.size(1) # 256
+        l_neg_curbatch = torch.bmm(feat_q, feat_k.transpose(2, 1)) # (1, 256, 256)
 
         # diagonal entries are similarity between same features, and hence meaningless.
         # just fill the diagonal with very small number, which is exp(-10) and almost zero
@@ -52,4 +55,5 @@ class PatchNCELoss(nn.Module):
         loss = self.cross_entropy_loss(out, torch.zeros(out.size(0), dtype=torch.long,
                                                         device=feat_q.device))
 
+        # from IPython import embed; embed()
         return loss

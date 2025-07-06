@@ -1,7 +1,8 @@
-datasets/horse2zebra/
-datasets/summer2winter_yosemite/
-datasets/cityscapes/
-datasets/maps/
+datasets/horse2zebra
+datasets/summer2winter_yosemite
+datasets/cityscapes
+datasets/maps
+datasets/night2day
 
 outputs/
 
