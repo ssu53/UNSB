@@ -6,6 +6,7 @@ datasets/night2day
 datasets/seasonet
 
 outputs/
+scratch/
 
 checkpoints/
 

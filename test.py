@@ -37,6 +37,7 @@ import util.util as util
 
 if __name__ == '__main__':
     opt = TestOptions().parse()  # get test options
+    if opt.cond_dim == 0: opt.cond_dim = None
     # hard-code some parameters for test
     opt.num_threads = 0   # test code only supports num_threads = 1
     opt.batch_size = 1    # test code only supports batch_size = 1

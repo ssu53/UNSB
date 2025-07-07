@@ -36,6 +36,11 @@ if __name__ == '__main__':
 
         dataset.set_epoch(epoch)
         for i, (data,data2) in enumerate(zip(dataset,dataset2)):  # inner loop within one epoch
+            # from PIL import Image
+            # image_array = (torch.clamp((data['A'].squeeze(0) + 1) / 2, 0, 1).permute(1, 2, 0).cpu().numpy() * 255).astype('uint8')
+            # Image.fromarray(image_array).save(f'scratch/outputA_seasonet_{i}.jpg')
+            # image_array = (torch.clamp((data['B'].squeeze(0) + 1) / 2, 0, 1).permute(1, 2, 0).cpu().numpy() * 255).astype('uint8')
+            # Image.fromarray(image_array).save(f'scratch/outputB_seasonet_{i}.jpg')
             iter_start_time = time.time()  # timer for computation per iteration
             if total_iters % opt.print_freq == 0:
                 t_data = iter_start_time - iter_data_time
