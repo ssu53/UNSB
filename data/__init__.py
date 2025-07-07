@@ -74,6 +74,8 @@ class CustomDatasetDataLoader():
             dataset_class = find_dataset_using_name('unaligned_seasonet')
         elif 'bbbc' in opt.dataroot:
             dataset_class = find_dataset_using_name('unaligned_bbbc')
+        elif 'cell' in opt.dataroot or opt.dataset_mode == 'unaligned_cell':
+            dataset_class = find_dataset_using_name('unaligned_cell')
         else:
             dataset_class = find_dataset_using_name(opt.dataset_mode)
         self.dataset = dataset_class(opt)
