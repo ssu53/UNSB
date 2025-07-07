@@ -38,9 +38,9 @@ if __name__ == '__main__':
         for i, (data,data2) in enumerate(zip(dataset,dataset2)):  # inner loop within one epoch
             # from PIL import Image
             # image_array = (torch.clamp((data['A'].squeeze(0) + 1) / 2, 0, 1).permute(1, 2, 0).cpu().numpy() * 255).astype('uint8')
-            # Image.fromarray(image_array).save(f'scratch/outputA_seasonet_{i}.jpg')
+            # Image.fromarray(image_array).save(f'scratch/outputA_{i}.jpg')
             # image_array = (torch.clamp((data['B'].squeeze(0) + 1) / 2, 0, 1).permute(1, 2, 0).cpu().numpy() * 255).astype('uint8')
-            # Image.fromarray(image_array).save(f'scratch/outputB_seasonet_{i}.jpg')
+            # Image.fromarray(image_array).save(f'scratch/outputB_{i}.jpg')
             iter_start_time = time.time()  # timer for computation per iteration
             if total_iters % opt.print_freq == 0:
                 t_data = iter_start_time - iter_data_time
@@ -48,6 +48,13 @@ if __name__ == '__main__':
             batch_size = data["A"].size(0)
             total_iters += batch_size
             epoch_iter += batch_size
+            if opt.dataset_mode == 'unaligned_cell': 
+                # if batch size 1
+                # data['condition'] = dataset.embedding_dict[data['mols'].item()]
+                # data2['condition'] = dataset2.embedding_dict[data2['mols'].item()],
+                data['condition'] = dataset.dataset.embedding_matrix(data['mols'])
+                data['condition'] = dataset2.dataset.embedding_matrix(data2['mols'])
+
             if len(opt.gpu_ids) > 0:
                 torch.cuda.synchronize()
             optimize_start_time = time.time()

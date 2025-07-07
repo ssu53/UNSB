@@ -54,7 +54,7 @@ class BaseOptions():
         parser.add_argument('--no_antialias', action='store_true', help='if specified, use stride=2 convs instead of antialiased-downsampling (sad)')
         parser.add_argument('--no_antialias_up', action='store_true', help='if specified, use [upconv(learned filter)] instead of [upconv(hard-coded [1,3,3,1] filter), conv]')
         # dataset parameters
-        parser.add_argument('--dataset_mode', type=str, default='unaligned', help='chooses how datasets are loaded. [unaligned | aligned | single | colorization]')
+        parser.add_argument('--dataset_mode', type=str, default='unaligned', help='chooses how datasets are loaded. [unaligned | unaligned_cell | aligned | single | colorization]')
         parser.add_argument('--direction', type=str, default='AtoB', help='AtoB or BtoA')
         parser.add_argument('--serial_batches', action='store_true', help='if true, takes images in order to make batches, otherwise takes them randomly')
         parser.add_argument('--num_threads', default=4, type=int, help='# threads for loading data')
@@ -76,6 +76,23 @@ class BaseOptions():
         parser.add_argument('--stylegan2_G_num_downsampling',
                             default=1, type=int,
                             help='Number of downsampling layers used by StyleGAN2Generator')
+        
+        # Cell dataset specific arguments
+        parser.add_argument('--cell_dataset_name', type=str, default=None, help='(cell data only) Dataset name')
+        parser.add_argument('--cell_image_path', type=str, default=None, help='(cell data only) Path to the image folder')
+        parser.add_argument('--cell_data_index_path', type=str, default=None, help='(cell data only) Path to data index')
+        parser.add_argument('--cell_embedding_path', type=str, default=None, help='(cell data only) Path to embeddings')
+        parser.add_argument('--cell_augment_train', type=bool, default=True, help='(cell data only) Whether to apply data augmentation during training')
+        parser.add_argument('--cell_normalize', type=bool, default=True, help='(cell data only) Controls whether to normalize input images')
+        parser.add_argument('--cell_mol_list', type=str, default=None, help='(cell data only) List of molecules to include (comma-separated)')
+        parser.add_argument('--cell_ood_set', type=str, default=None, help='(cell data only) List of out-of-distribution drugs (comma-separated)')
+        parser.add_argument('--cell_batch_correction', type=bool, default=False, help='(cell data only) If True, perform batch correction')
+        parser.add_argument('--cell_multimodal', type=bool, default=False, help='(cell data only) If True, handle multiple types of perturbations')
+        parser.add_argument('--cell_add_controls', default=False, help='(cell data only) Whether to add controls in non-batch correction mode')
+        parser.add_argument('--cell_batch_key', type=str, default=None, help='(cell data only) Key for batch correction')
+        parser.add_argument('--cell_cpd_name', type=str, default=None, help='(cell data only) Compound name for multimodal datasets')
+        parser.add_argument("--cell_iter_ctrl", action="store_true", help="Iterate over control samples or target image")
+        parser.add_argument('--cell_dataset_n_samples', type=int, default=None, help='(cell data only) Number of samples to use from the dataset (for subsampling)')
 
         self.initialized = True
         return parser

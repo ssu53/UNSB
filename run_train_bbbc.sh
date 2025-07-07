@@ -1,9 +1,10 @@
 python train.py \
-    --dataroot ./datasets/seasonet \
-    --name dummy_SB \
+    --cell_dataset_name bbbc021 \
+    --dataset_mode unaligned_cell \
+    --name bbbc_SB \
     --mode sb \
     --lambda_SB 1.0 \
     --lambda_NCE 1.0 \
-    --direction B2A \
+    --direction AtoB \
     --gpu_ids 0 \
     --cond_dim 1024 \

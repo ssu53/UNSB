@@ -54,6 +54,9 @@ if __name__ == '__main__':
     webpage = html.HTML(web_dir, 'Experiment = %s, Phase = %s, Epoch = %s' % (opt.name, opt.phase, opt.epoch))
 
     for i, (data,data2) in enumerate(zip(dataset,dataset2)):
+        if opt.dataset_mode == 'unaligned_cell': 
+            data['condition'] = dataset.dataset.embedding_matrix(data['mols'])
+            data['condition'] = dataset2.dataset.embedding_matrix(data2['mols'])
         if i == 0:
             model.data_dependent_initialize(data,data2)
             model.setup(opt)               # regular setup: load and print networks; create schedulers

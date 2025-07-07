@@ -13,6 +13,7 @@ See our template dataset class 'template_dataset.py' for more details.
 import importlib
 import torch.utils.data
 from data.base_dataset import BaseDataset
+import yaml
 
 
 def find_dataset_using_name(dataset_name):
@@ -70,15 +71,24 @@ class CustomDatasetDataLoader():
         """
         self.opt = opt
         if 'seasonet' in opt.dataroot:
-            # dataset_class = find_dataset_using_name('unaligned_bbbc')
             dataset_class = find_dataset_using_name('unaligned_seasonet')
-        elif 'bbbc' in opt.dataroot:
-            dataset_class = find_dataset_using_name('unaligned_bbbc')
-        elif 'cell' in opt.dataroot or opt.dataset_mode == 'unaligned_cell':
+        elif opt.dataset_mode == 'unaligned_cell':
+            assert opt.direction == 'AtoB'
+            if opt.cell_dataset_name == 'bbbc021':
+                with open("bbbc_config.yaml", "r") as f:
+                    bbbc_config = yaml.safe_load(f)
+                for k, v in bbbc_config.items():
+                    setattr(opt, f"cell_{k}", v)
+            else:
+                raise NotImplementedError
             dataset_class = find_dataset_using_name('unaligned_cell')
         else:
             dataset_class = find_dataset_using_name(opt.dataset_mode)
         self.dataset = dataset_class(opt)
+        # if opt.dataset_mode == 'unaligned_cell':
+        #     self.embedding_dict = {}
+        #     for idx in range(self.dataset.embedding_matrix.num_embeddings):
+        #         self.embedding_dict[idx] = self.dataset.embedding_matrix(torch.tensor(idx))
         print("dataset [%s] was created" % type(self.dataset).__name__)
         self.dataloader = torch.utils.data.DataLoader(
             self.dataset,
