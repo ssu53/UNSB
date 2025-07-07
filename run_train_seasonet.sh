@@ -30,7 +30,7 @@ python -u train.py \
     --mode sb \
     --lambda_SB 1.0 \
     --lambda_NCE 1.0 \
-    --direction A2B \
+    --direction AtoB \
     --gpu_ids 0 \
     --load_size 120 \
     --crop_size 120 \
@@ -39,5 +39,4 @@ python -u train.py \
     --n_epochs_decay 1 \
     --save_latest_freq 20000 \
     --save_epoch_freq 1 \
-    --evaluation_freq 10000 \
     --save_by_iter \
